@@ -1,0 +1,387 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <style type="text/css">
+        #container, html, body {
+            height: 100%;
+            margin: 0;
+        }
+        .info {
+            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.5;
+            font-weight: 300;
+            color: #111213;
+            box-sizing: border-box;
+            padding: .75rem 1.25rem;
+            margin-bottom: 1rem;
+            border-radius: .25rem;
+            position: fixed;
+            top: 1rem;
+            background-color: white;
+            width: auto;
+            min-width: 22rem;
+            border-width: 0;
+            right: 1rem;
+            box-shadow: 0 2px 6px 0 rgba(114, 124, 245, .5);
+        }
+
+        .input-card {
+            font-size: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            line-height: 1.5;
+            font-weight: 300;
+            color: #111213;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background-color: #fff;
+            background-clip: border-box;
+            border-width: 0;
+            border-radius: 0.4rem;
+            box-shadow: 0 2px 6px 0 rgba(114, 124, 245, .5);
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            flex: 1 1 auto;
+            padding: 0.75rem 1.25rem;
+            width: 24rem;
+        }
+
+    </style>
+    <title>高德地图边界手动获取</title>
+    <script language="javascript"
+            src="//webapi.amap.com/maps?v=1.4.15&key=4a2497e6a881142bf6598350870a8a23&plugin=AMap.Scale&plugin=AMap.MouseTool&plugin=AMap.PolyEditor"></script>
+
+</head>
+<body onload="mapInit();">
+<div id="container"></div>
+
+<div class="input-card">
+    <h4>获取经纬度(左键双击结束绘制)：</h4>
+    <div class="input-item">
+
+        <input id="drawPolygon" type="button" name="func" value="画多边形">
+        <input id="editPolygon" type="button" name="edit" value="编辑">
+        <input id="endEditPolygon" type="button" name="edit" value="结束编辑">
+        <input id="clear" type="button" class="btn" value="清除">
+        <input id="printPath" type="button" class="btn" value="输出路径">
+
+    </div>
+</div>
+
+<div class="info">
+    <h4>获取地图级别与中心点坐标</h4>
+    <p>当前级别：<span id="map-zoom">15</span></p>
+    <p>当前中心点：<span id="map-center">121.562315,31.188987</span></p>
+    <p>省：<span id="map-province"></span></p>
+    <p>市：<span id="map-city"></span></p>
+    <p>区：<span id="map-district"></span></p>
+
+
+</div>
+
+
+<script language="javascript">
+    function mapInit() {
+
+        var buildingLayer = new AMap.Buildings({zIndex: 130, merge: false, sort: false,});//zooms: [17, 20]
+        var options =
+            {
+                hideWithoutStyle: false,//是否隐藏设定区域外的楼块
+                areas: [{ //围栏1
+                    //visible:false,//是否可见
+                    rejectTexture: false,//是否屏蔽自定义地图的纹理
+                    color1: 'ffffff00',//楼顶颜色
+                    color2: 'ffffcc00',//楼面颜色
+                    path: [[114.30241, 30.544855], [114.302742, 30.544812], [114.302819, 30.544583], [114.302625, 30.544376], [114.302308, 30.544469], [114.302296, 30.544727],]
+                }, { //围栏2
+                    color1: 'ff99ff00',
+                    color2: 'ff999900',
+                    path: [[114.341122, 30.546651], [114.341573, 30.546651], [114.341573, 30.546933], [114.341964, 30.546975], [114.341959, 30.546656], [114.342538, 30.546697], [114.34256, 30.546536], [114.342565, 30.546319], [114.341878, 30.546305], [114.341444, 30.546291], [114.341122, 30.546263], [114.340988, 30.546268], [114.341026, 30.546499], [114.341074, 30.546536],]
+                }]
+            };
+
+        buildingLayer.setStyle(options); //此配色优先级高于自定义mapStyle
+
+
+        var map = new AMap.Map("container", {
+            zoom: 17,
+            pitch: 0,
+            showIndoorMap: false,
+            resizeEnable: false,
+            showLabel: true,
+            mapStyle: 'amap://styles/dd2d869c7e961d4958fa85d1dab518cd', //设置地图的显示样式
+            // mapStyle: 'amap://styles/light',
+            center: [114.302234, 30.544094],
+            features: ['point', 'road'],
+            viewMode: '3D',
+            layers: [
+                new AMap.TileLayer(),
+                buildingLayer,
+            ]
+        });
+
+        window.map = map;
+
+        map.addControl(new AMap.Scale())
+        new AMap.Polygon({
+            bubble: true,
+            fillOpacity: 0.4,
+            strokeWeight: 1,
+            path: options.areas[0].path,
+            map: map
+        })
+        new AMap.Polygon({
+            bubble: true,
+            fillColor: 'green',
+            fillOpacity: 0.2,
+            strokeWeight: 1,
+            path: options.areas[1].path,
+            map: map
+        })
+
+        //为地图注册click事件获取鼠标点击出的经纬度坐标
+        // map.on('click', function(e) {
+        //     console.log(e);
+        //     document.getElementById("lnglat").value = e.lnglat.lng + ',' + e.lnglat.lat;
+        // });
+
+        //显示地图层级与中心点信息
+        function logMapinfo() {
+            var zoom = map.getZoom(); //获取当前地图级别
+            var center = map.getCenter(); //获取当前地图中心位置
+
+             map.getCity( function(info){
+                 document.querySelector("#map-province").innerText = info.province;
+                 document.querySelector("#map-city").innerText = info.city;
+                 document.querySelector("#map-district").innerText = info.district;
+
+             });
+            document.querySelector("#map-zoom").innerText = zoom;
+            document.querySelector("#map-center").innerText = center.toString();
+        };
+
+        logMapinfo();
+
+        //绑定地图移动与缩放事件
+        map.on('moveend', logMapinfo);
+        map.on('zoomend', logMapinfo);
+
+        var mouseTool = new AMap.MouseTool(map);
+        //监听draw事件可获取画好的覆盖物
+        var overlays = [];
+        mouseTool.on('draw', function (e) {
+            overlays.push(e.obj);
+            console.log(e.obj);
+            console.log('overlays', overlays);
+
+            // close( Boolean)
+            // 关闭当前鼠标操作。参数arg设为true时，鼠标操作关闭的同时清除地图上绘制的所有覆盖物对象；设为false时，保留所绘制的覆盖物对象。默认为false
+            mouseTool.close(false);
+
+
+        })
+
+        function draw(type) {
+            switch (type) {
+                case 'marker': {
+                    mouseTool.marker({
+                        //同Marker的Option设置
+                    });
+                    break;
+                }
+                case 'polyline': {
+                    mouseTool.polyline({
+                        strokeColor: '#80d8ff'
+                        //同Polyline的Option设置
+                    });
+                    break;
+                }
+                case 'polygon': {
+                    mouseTool.polygon({
+                        fillColor: '#00b0ff',
+                        strokeColor: '#80d8ff'
+                        //同Polygon的Option设置
+                    });
+                    break;
+                }
+                case 'rectangle': {
+                    mouseTool.rectangle({
+                        fillColor: '#00b0ff',
+                        strokeColor: '#80d8ff'
+                        //同Polygon的Option设置
+                    });
+                    break;
+                }
+                case 'circle': {
+                    mouseTool.circle({
+                        fillColor: '#00b0ff',
+                        strokeColor: '#80d8ff'
+                        //同Circle的Option设置
+                    });
+                    break;
+                }
+            }
+        }
+
+
+        document.getElementById('clear').onclick = function () {
+            map.remove(overlays)
+
+          if (polyEditor){
+              polyEditor.close();
+          }
+            overlays = [];
+        }
+
+
+        document.getElementById('drawPolygon').onclick = function () {
+
+            console.log(overlays);
+
+            map.remove(overlays)
+            overlays = [];
+
+            draw('polygon');
+
+        }
+
+        var polyEditor;
+
+        document.getElementById('editPolygon').onclick = function () {
+
+            console.log(overlays);
+
+            if (overlays && overlays.length === 1) {
+
+
+                polyEditor = new AMap.PolyEditor(map, overlays[0]);
+
+                polyEditor.open();
+            } else {
+                map.remove(overlays)
+                overlays = [];
+            }
+
+
+        }
+
+        document.getElementById('endEditPolygon').onclick = function () {
+            if (polyEditor) {
+                polyEditor.close();
+            }
+        }
+
+        document.getElementById('printPath').onclick = function () {
+            var arr = "[";
+
+            overlays.forEach(overlay => {
+                let path = overlay.getPath();
+                console.log('path:', path);
+                path.forEach(pt => {
+                    arr += ('[');
+                    arr += (pt.lng);
+                    arr += (',');
+                    arr += (pt.lat);
+                    arr += ('],');
+                });
+            });
+
+            arr += (']');
+
+
+            alert(arr);
+
+
+            console.log('overlays:', overlays);
+            console.log('arr:', arr);
+
+        }
+
+
+        /*
+
+
+        // 创建Object3DLayer图层
+        var object3Dlayer = new AMap.Object3DLayer();
+        map.add(object3Dlayer);
+
+        var druckMeshes, cityMeshes;
+
+
+        map.plugin(["AMap.GltfLoader"], function () {
+            var urlCity = 'https://a.amap.com/jsapi_demos/static/gltf-online/shanghai/scene.gltf';
+            var urlDuck = 'https://a.amap.com/jsapi_demos/static/gltf/Duck.gltf';
+            var paramCity = {
+                position: new AMap.LngLat(116.473606, 39.995997), // 必须
+                scale: 3580, // 非必须，默认1
+                height: 1100,  // 非必须，默认0
+                scene: 0, // 非必须，默认0
+            };
+
+            var paramDuck = {
+                position: new AMap.LngLat(116.473700, 39.995997), // 必须
+                scale: 800, // 非必须，默认1
+                height: -100,  // 非必须，默认0
+                scene: 0, // 非必须，默认0
+            };
+
+            var gltfObj = new AMap.GltfLoader();
+
+            gltfObj.load(urlCity, function (gltfCity) {
+                cityMeshes = gltfCity;
+                gltfCity.setOption(paramCity);
+                gltfCity.rotateX(90);
+                gltfCity.rotateZ(120);
+                object3Dlayer.add(gltfCity);
+            });
+
+            gltfObj.load(urlDuck, function (gltfDuck) {
+                druckMeshes = gltfDuck;
+                gltfDuck.setOption(paramDuck);
+                gltfDuck.rotateX(90);
+                gltfDuck.rotateZ(-20);
+                object3Dlayer.add(gltfDuck);
+            });
+
+        });
+
+        // 给gltf模型绑定事件
+        map.on('click', function (ev) {
+            var pixel = ev.pixel;
+            var px = new AMap.Pixel(pixel.x, pixel.y);
+            var obj = map.getObject3DByContainerPos(px, [object3Dlayer], false) || {};
+            if (obj && obj.object) {
+                var meshId = obj.object.id;
+                if(druckMeshes && druckMeshes.layerMesh){
+                    for(var i = 0; i < druckMeshes.layerMesh.length; i++) {
+                        if(meshId === druckMeshes.layerMesh[i].id){
+                            return log.info("您点击了小黄鸭模型！");
+                        }
+                    }
+                }
+
+                if(cityMeshes && cityMeshes.layerMesh){
+                    for(var i = 0; i < cityMeshes.layerMesh.length; i++) {
+                        if(meshId === cityMeshes.layerMesh[i].id){
+                            return log.info("您点击了陆家嘴模型！");
+                        }
+                    }
+                }
+
+            }
+
+        });
+
+
+        */
+
+    }
+</script>
+
+</body>
+</html>
